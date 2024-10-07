@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>휘매쓰 연산 챌린지!</title>
+    <!-- MathJax 라이브러리 로드 -->
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" defer></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        #gameContainer {
+            display: none;
+        }
+        #question {
+            font-size: 24px;
+            margin: 20px;
+        }
+        #options button {
+            display: block;
+            width: 200px;
+            margin: 10px auto;
+            padding: 10px;
+            font-size: 18px;
+        }
+        #energyBarContainer {
+            width: 300px;
+            height: 20px;
+            border: 1px solid #000;
+            margin: 20px auto;
+            position: relative;
+        }
+        #energyBar {
+            height: 100%;
+            background-color: green;
+            width: 100%;
+            transition: width 0.1s linear;
+        }
+        #info {
+            margin: 20px;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>휘매쓰 연산 챌린지!</h1>
+    <div id="difficultySelection">
+        <p>난이도를 선택하세요:</p>
+        <button onclick="startGame('hard')">상 (20초)</button>
+        <button onclick="startGame('medium')">중 (30초)</button>
+        <button onclick="startGame('easy')">하 (40초)</button>
+    </div>
+
+    <div id="gameContainer">
+        <div id="info">
+            <p id="score">점수: 0</p>
+            <p id="lives">남은 기회: 3</p>
+            <p id="totalTime">총 게임 시간: 0초</p>
+        </div>
+        <div id="energyBarContainer">
+            <div id="energyBar"></div>
+        </div>
+        <div id="question"></div>
+        <div id="options"></div>
+    </div>
+
+    <script>
+        // 문제와 답변 목록
+        const problems = [
+            { question: '2(x + 3) - 3(x - 2)', answer: '-x + 12' },
+            { question: '3\\{2(x - 1) - (3x + 2)\\}', answer: '-3x - 12' },
+            { question: '2(x - 3) + 3(2x + 1)', answer: '8x - 3' },
+            { question: '3(2x - 1) - 2(3x + 4)', answer: '-11' },
+            { question: '(2x - 3) + 2(x + 4) - (3x - 1)', answer: 'x + 6' },
+            { question: '2\\{3(x - 2) - 2(2x + 1)\\}', answer: '-2x - 16' },
+            { question: '3\\left[2\\{x - (2x - 3)\\}\\right]', answer: '-6x + 18' },
+            { question: '2(3x - 4) - \\{3(x + 2) - 5x\\}', answer: '8x - 14' },
+            { question: '3(2x - 1) - \\{4(x + 2) - 3x\\}', answer: '5x - 11' },
+            { question: '2\\left[3\\{2(x - 1) - (x + 3)\\}\\right]', answer: '6x - 30' },
+            { question: '5(2x - 3) - 3\\{2(x + 1) - 4x\\}', answer: '16x - 21' },
+            { question: '(3x - 2) + 2(x + 4) - (2x - 1)', answer: '3x + 7' },
+            { question: '3(2x - 1) - 2\\{3(x + 2) - 4x\\} + 5', answer: '8x - 10' },
+            { question: '2\\{3(2x - 1) - (3x + 4)\\} + 3(x - 2)', answer: '9x - 20' },
+            { question: '2\\left[3\\{2(x - 1) - (x + 3)\\} + 4x\\right] - 5(x - 2)', answer: '9x - 20' },
+            { question: '3\\left[2\\{3(x - 2) - (2x + 1)\\} + 5x\\right] - 2(3x - 4)', answer: '15x - 34' },
+            { question: '2(3x - 1) - \\{4(2x + 3) - 3(x - 2)\\}', answer: 'x - 20' },
+            { question: '3(2x - 1) - 2\\{4(x + 2) - 3(2x - 1)\\} + 5(x - 3)', answer: '15x - 40' },
+            { question: '(2x - 3) + 2\\{3(x + 1) - (4x - 2)\\} - 3\\{2(x - 1) - (3x + 4)\\}', answer: '3x + 25' },
+            { question: '\\dfrac{x}{2} + \\dfrac{x}{3}', answer: '\\dfrac{5x}{6}' },
+            { question: '\\dfrac{2x}{3} + \\dfrac{x - 1}{2} - \\dfrac{x + 2}{6}', answer: '\\dfrac{6x - 5}{6}' },
+            { question: '\\dfrac{x}{2} - \\dfrac{x}{3} + \\dfrac{x}{6}', answer: '\\dfrac{x}{3}' },
+            { question: '\\dfrac{2x + 1}{3} + \\dfrac{x - 2}{2}', answer: '\\dfrac{7x - 4}{6}' },
+            { question: '\\dfrac{3x - 1}{2} - \\dfrac{x + 2}{3}', answer: '\\dfrac{7x - 7}{6}' },
+            { question: '\\dfrac{x + 2}{3} + \\dfrac{2x - 1}{6}', answer: '\\dfrac{4x + 3}{6}' },
+            { question: '\\dfrac{3x - 2}{4} \\div \\dfrac{x + 1}{2}', answer: '\\dfrac{3x - 2}{2x + 2}' },
+            { question: '\\dfrac{2x + 3}{5} + \\dfrac{3x - 2}{10}', answer: '\\dfrac{7x + 4}{10}' },
+            { question: '\\dfrac{x - 1}{2} + \\dfrac{x + 1}{3}', answer: '\\dfrac{5x - 1}{6}' },
+            { question: '\\dfrac{2x - 1}{3} - \\dfrac{x + 2}{6}', answer: '\\dfrac{3x - 4}{6}' },
+            { question: 'a = 2x + 3,\\ b = x - 2 \\quad \\text{일 때},\\ a + b', answer: '3x + 1' },
+            { question: 'a = 3x - 2,\\ b = 2x + 1 \\quad \\text{일 때},\\ a - b', answer: 'x - 3' },
+            { question: 'a = x + 2,\\ b = 2x - 1 \\quad \\text{일 때},\\ 2a + 3b', answer: '8x + 1' },
+            { question: 'a = 2x - 3,\\ b = x + 4 \\quad \\text{일 때},\\ 3a - 2b', answer: '4x - 17' },
+            { question: 'a = 3x + 1,\\ b = 2x - 3 \\quad \\text{일 때},\\ \\dfrac{a + b}{2}', answer: '\\dfrac{5x - 2}{2}' },
+            { question: '\\Box + 2(x + 3) = 3x + 10', answer: 'x + 4' },
+            { question: '\\Box - 3(x - 2) = 2x + 1', answer: '5x - 5' },
+            { question: '2\\Box + (x - 3) = 3x + 5', answer: 'x + 4' },
+            { question: '3(\\Box - 2) = 2x + 1', answer: '\\dfrac{2x + 7}{3}' },
+            { question: '\\Box + \\dfrac{x}{2} = \\dfrac{3x + 1}{2}', answer: 'x + \\dfrac{1}{2}' },
+            { question: '\\text{어떤 다항식에 } 2x + 3 \\text{을 더해야 할 것을 잘못하여 뺐더니 } x - 5 \\text{가 되었다. 어떤 다항식은?}', answer: '3x - 2' },
+            { question: '\\text{어떤 다항식에 } 3x - 2 \\text{를 빼야 할 것을 잘못하여 더했더니 } 5x + 1 \\text{이 되었다. 어떤 다항식은?}', answer: '2x + 3' },
+            { question: '\\text{다항식 } A \\text{에서 } 2x - 3 \\text{을 뺐더니 } 3x + 2 \\text{가 되었고, 다항식 } B \\text{에 } 2x - 3 \\text{을 더했더니 } 4x - 1 \\text{이 되었다. } A + B \\text{는?}', answer: '7x + 1' },
+            { question: '(x + 1) \\diamond (x - 2) = (x + 1) + (x - 2) + 5 \\quad \\text{로 정의할 때},\\ (2x + 3) \\diamond (x - 1) \\text{의 값은?}', answer: '3x + 7' },
+            { question: 'A \\ast B = \\dfrac{A + B}{2} \\quad \\text{로 정의할 때},\\ (3x - 2) \\ast (x + 4) \\text{의 값은?}', answer: '2x + 1' },
+            { question: 'A \\circleddash B = \\dfrac{A - B}{2} \\quad \\text{로 정의할 때},\\ (5x + 3) \\circleddash (x - 1) \\text{의 값은?}', answer: '2x + 2' },
+            { question: 'a = 3x - 2,\\ b = 2x + 1 \\quad \\text{일 때},\\ 2a - 3b', answer: 'x - 7' },
+            { question: 'a = x + 3,\\ b = 2x - 1 \\quad \\text{일 때},\\ \\dfrac{a + b}{3}', answer: 'x + \\dfrac{2}{3}' },
+            { question: 'a = 2x - 1,\\ b = x + 2 \\quad \\text{일 때},\\ 3a + 2b - 5', answer: '8x - 4' },
+            { question: '\\Box - (3x + 1) = 2x - 5', answer: '5x - 4' },
+            { question: '3(\\Box + 1) = 2x - 4', answer: '\\dfrac{2x - 7}{3}' }
+        ];
+
+        let score = 0;
+        let lives = 3;
+        let totalTime = 0;
+        let difficulty;
+        let timeLimit;
+        let timeLeft;
+        let timerInterval;
+        let totalTimeInterval;
+        let problemIndex = 0;
+        let problemsCopy = [];
+        let speedIncrease = 1;
+
+        function startGame(selectedDifficulty) {
+            difficulty = selectedDifficulty;
+            if (difficulty === 'hard') {
+                timeLimit = 20;
+                scoreIncrement = 20;
+            } else if (difficulty === 'medium') {
+                timeLimit = 30;
+                scoreIncrement = 15;
+            } else {
+                timeLimit = 40;
+                scoreIncrement = 10;
+            }
+            timeLeft = timeLimit;
+            document.getElementById('difficultySelection').style.display = 'none';
+            document.getElementById('gameContainer').style.display = 'block';
+            problemsCopy = [...problems];
+            totalTimeInterval = setInterval(() => {
+                totalTime++;
+                document.getElementById('totalTime').innerText = `총 게임 시간: ${totalTime}초`;
+            }, 1000);
+            nextProblem();
+        }
+
+        function nextProblem() {
+            // 시간이 지날수록 속도 증가
+            timeLimit = timeLimit * Math.pow(0.99, speedIncrease - 1);
+            speedIncrease++;
+            timeLeft = timeLimit;
+            updateEnergyBar();
+
+            // 문제 랜덤 선택
+            if (problemsCopy.length === 0) {
+                problemsCopy = [...problems];
+            }
+            const randomIndex = Math.floor(Math.random() * problemsCopy.length);
+            const currentProblem = problemsCopy.splice(randomIndex, 1)[0];
+            document.getElementById('question').innerHTML = `\\(${currentProblem.question}\\)`;
+
+            // 정답과 오답 선택지 생성
+            const options = generateOptions(currentProblem.answer);
+            shuffleArray(options);
+
+            const optionsContainer = document.getElementById('options');
+            optionsContainer.innerHTML = '';
+            options.forEach(option => {
+                const button = document.createElement('button');
+                button.innerHTML = `\\(${option}\\)`;
+                button.onclick = () => checkAnswer(option, currentProblem.answer);
+                optionsContainer.appendChild(button);
+            });
+
+            MathJax.typeset();
+
+            // 타이머 시작
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timeLeft -= 0.1;
+                updateEnergyBar();
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    lives--;
+                    updateLives();
+                    if (lives === 0) {
+                        endGame();
+                    } else {
+                        nextProblem();
+                    }
+                }
+            }, 100);
+
+        }
+
+        function updateEnergyBar() {
+            const energyBar = document.getElementById('energyBar');
+            const percentage = (timeLeft / timeLimit) * 100;
+            energyBar.style.width = percentage + '%';
+            if (percentage > 50) {
+                energyBar.style.backgroundColor = 'green';
+            } else if (percentage > 20) {
+                energyBar.style.backgroundColor = 'yellow';
+            } else {
+                energyBar.style.backgroundColor = 'red';
+            }
+        }
+
+        function checkAnswer(selected, correct) {
+            clearInterval(timerInterval);
+            if (selected === correct) {
+                score += scoreIncrement;
+                document.getElementById('score').innerText = `점수: ${score}`;
+            } else {
+                lives--;
+                updateLives();
+                if (lives === 0) {
+                    endGame();
+                    return;
+                }
+            }
+            nextProblem();
+        }
+
+        function updateLives() {
+            document.getElementById('lives').innerText = `남은 기회: ${lives}`;
+            if (lives === 0) {
+                endGame();
+            }
+        }
+
+        function endGame() {
+            clearInterval(timerInterval);
+            clearInterval(totalTimeInterval);
+            alert(`게임 오버! 최종 점수: ${score}점, 총 게임 시간: ${totalTime}초`);
+            location.reload();
+        }
+
+        function generateOptions(correctAnswer) {
+            const options = [correctAnswer];
+            while (options.length < 4) {
+                let fakeAnswer = generateFakeAnswer(correctAnswer);
+                if (!options.includes(fakeAnswer)) {
+                    options.push(fakeAnswer);
+                }
+            }
+            return options;
+        }
+
+        function generateFakeAnswer(correctAnswer) {
+            // 간단한 방식으로 오답 생성
+            const randomOffset = Math.floor(Math.random() * 10) - 5;
+            if (correctAnswer.includes('x')) {
+                return correctAnswer.replace(/([+-]?)(\d*)x/g, (match, sign, num) => {
+                    const newNum = (parseInt(num || '1') || 1) + randomOffset;
+                    return `${sign}${newNum}x`;
+                });
+            } else {
+                const newAnswer = parseInt(correctAnswer) + randomOffset;
+                return newAnswer.toString();
+            }
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+    </script>
+
+</body>
+</html>
